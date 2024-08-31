@@ -17,6 +17,7 @@ import (
 	"github.com/free5gc/go-gtp5gnl"
 	"github.com/free5gc/go-upf/internal/forwarder/buffnetlink"
 	"github.com/free5gc/go-upf/internal/forwarder/perio"
+	"github.com/free5gc/go-upf/internal/grpcupfc"
 	"github.com/free5gc/go-upf/internal/gtpv1"
 	"github.com/free5gc/go-upf/internal/logger"
 	"github.com/free5gc/go-upf/internal/report"
@@ -30,15 +31,16 @@ const (
 )
 
 type Gtp5g struct {
-	mux      *nl.Mux
-	link     *Gtp5gLink
-	conn     *nl.Conn
-	psConn   *nl.Conn
-	client   *gtp5gnl.Client
-	psClient *gtp5gnl.Client
-	bsnl     *buffnetlink.Server
-	ps       *perio.Server
-	log      *logrus.Entry
+	mux        *nl.Mux
+	link       *Gtp5gLink
+	conn       *nl.Conn
+	psConn     *nl.Conn
+	client     *gtp5gnl.Client
+	psClient   *gtp5gnl.Client
+	bsnl       *buffnetlink.Server
+	ps         *perio.Server
+	log        *logrus.Entry
+	grpcClient *grpcupfc.Client
 }
 
 func OpenGtp5g(wg *sync.WaitGroup, addr string, mtu uint32) (*Gtp5g, error) {
@@ -81,19 +83,19 @@ func OpenGtp5g(wg *sync.WaitGroup, addr string, mtu uint32) (*Gtp5g, error) {
 	}
 	g.client = c
 
-	psConn, err := nl.Open(syscall.NETLINK_GENERIC)
-	if err != nil {
-		g.Close()
-		return nil, errors.Wrap(err, "open ps netlink")
-	}
-	g.psConn = psConn
+	// psConn, err := nl.Open(syscall.NETLINK_GENERIC)
+	// if err != nil {
+	// 	g.Close()
+	// 	return nil, errors.Wrap(err, "open ps netlink")
+	// }
+	// g.psConn = psConn
 
-	psc, err := gtp5gnl.NewClient(psConn, mux)
-	if err != nil {
-		g.Close()
-		return nil, errors.Wrap(err, "new ps client")
-	}
-	g.psClient = psc
+	// psc, err := gtp5gnl.NewClient(psConn, mux)
+	// if err != nil {
+	// 	g.Close()
+	// 	return nil, errors.Wrap(err, "new ps client")
+	// }
+	// g.psClient = psc
 
 	err = g.checkVersion()
 	if err != nil {
@@ -114,6 +116,13 @@ func OpenGtp5g(wg *sync.WaitGroup, addr string, mtu uint32) (*Gtp5g, error) {
 		return nil, errors.Wrap(err, "open perio server")
 	}
 	g.ps = ps
+
+	grpcClient, err := grpcupfc.NewClient("localhost:50051") // defaul grpc server address
+	if err != nil {
+		g.Close()
+		return nil, errors.Wrap(err, "new grpc client")
+	}
+	g.grpcClient = grpcClient
 
 	g.log.Infof("Forwarder started")
 	return g, nil
@@ -137,6 +146,9 @@ func (g *Gtp5g) Close() {
 	}
 	if g.ps != nil {
 		g.ps.Close()
+	}
+	if g.grpcClient != nil {
+		g.grpcClient.Close()
 	}
 }
 
