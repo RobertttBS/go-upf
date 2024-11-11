@@ -390,6 +390,11 @@ func (g *Gtp5g) CreatePDR(lSeid uint64, req *ie.IE) error {
 	var pdrid uint64
 	var attrs []nl.Attr
 
+	var teid uint32
+	var ueIp string
+	var qerId uint32
+	var farId uint32
+
 	ies, err := req.CreatePDR()
 	if err != nil {
 		return err
