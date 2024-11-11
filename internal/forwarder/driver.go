@@ -47,6 +47,13 @@ func NewDriver(wg *sync.WaitGroup, cfg *factory.Config) (Driver, error) {
 	}
 
 	logger.MainLog.Infof("starting Gtpu Forwarder [%s]", cfgGtpu.Forwarder)
+	if cfgGtpu.Forwarder == "grpc" {
+		driver, err := OpenGrpc()
+		if err != nil {
+			return nil, errors.Wrap(err, "open Grpc")
+		}
+		return driver, nil
+	}
 	if cfgGtpu.Forwarder == "gtp5g" {
 		var gtpuAddr string
 		var mtu uint32
