@@ -117,6 +117,14 @@ func OpenGtp5g(wg *sync.WaitGroup, addr string, mtu uint32) (*Gtp5g, error) {
 	}
 	g.ps = ps
 
+	grpcClient, err := grpcupfc.NewClient("localhost:50051") // defaul grpc server address
+	if err != nil {
+		g.Close()
+		return nil, errors.Wrap(err, "new grpc client")
+	}
+	g.grpcClient = grpcClient
+	g.grpcClient.SayHello("go-upf")
+
 	g.log.Infof("Forwarder started")
 	return g, nil
 }

@@ -16,7 +16,6 @@ import (
 
 type Client struct {
 	Client pb.UPFAppClient
-	Ctx    context.Context
 	conn   *grpc.ClientConn
 }
 
@@ -26,18 +25,12 @@ func NewClient(addr string) (*Client, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	go func() {
-		<-ctx.Done()
-		cancel()
-	}()
 	c := pb.NewUPFAppClient(conn)
 
 	logger.Log.Infof("Connected to UPF gRPC server at %s", addr)
 
 	return &Client{
 		Client: c,
-		Ctx:    ctx,
 		conn:   conn,
 	}, nil
 }
@@ -61,11 +54,24 @@ func ipv4ToUint32(ipStr string) uint32 {
 	return binary.BigEndian.Uint32(ip)
 }
 
-func (c *Client) AddUplinkPdr(teid uint32, ueIp string, pdrId uint32, qerId uint32, farId uint32) {
-	ipUint32 := ipv4ToUint32(ueIp)
-	r, err := c.Client.AddUplinkPdr(c.Ctx, &pb.UplinkPdrRequest{
+func (c *Client) SayHello(name string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		log.Fatalf("could not greet: %v", err)
+	}
+	log.Printf("Received: %s", r.GetMessage())
+}
+
+func (c *Client) AddUplinkPdr(teid uint32, ueIp uint32, pdrId uint32, qerId uint32, farId uint32) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddUplinkPdr(ctx, &pb.UplinkPdrRequest{
 		Teid:  teid,
-		UeIp:  ipUint32,
+		UeIp:  ueIp,
 		PdrId: pdrId,
 		QerId: qerId,
 		FarId: farId})
@@ -76,7 +82,10 @@ func (c *Client) AddUplinkPdr(teid uint32, ueIp string, pdrId uint32, qerId uint
 }
 
 func (c *Client) SetBuffer(action bool, farId uint32) {
-	r, err := c.Client.SetBuffer(c.Ctx, &pb.BufferRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.SetBuffer(ctx, &pb.BufferRequest{
 		Action: action,
 		FarId:  farId,
 	})
@@ -87,7 +96,10 @@ func (c *Client) SetBuffer(action bool, farId uint32) {
 }
 
 func (c *Client) AddUplinkFar(teid uint32, action uint32, farId uint32, tunnelSrcAddr uint32, tunnelDstAddr uint32) {
-	r, err := c.Client.AddUplinkFar(c.Ctx, &pb.FarRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddUplinkFar(ctx, &pb.FarRequest{
 		Teid:          teid,
 		Action:        action,
 		FarId:         farId,
@@ -101,7 +113,10 @@ func (c *Client) AddUplinkFar(teid uint32, action uint32, farId uint32, tunnelSr
 }
 
 func (c *Client) AddDownlinkPdr(seid uint64, ueIp uint32, pdrId uint32, farId uint32, qerId uint32) {
-	r, err := c.Client.AddDownlinkPdr(c.Ctx, &pb.DownlinkPdrRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddDownlinkPdr(ctx, &pb.DownlinkPdrRequest{
 		Seid:  seid,
 		UeIp:  ueIp,
 		PdrId: pdrId,
@@ -115,7 +130,10 @@ func (c *Client) AddDownlinkPdr(seid uint64, ueIp uint32, pdrId uint32, farId ui
 }
 
 func (c *Client) AddDownlinkFar(teid uint32, action uint32, farId uint32, tunnelSrcAddr uint32, tunnelDstAddr uint32) {
-	r, err := c.Client.AddDownlinkFar(c.Ctx, &pb.FarRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddDownlinkFar(ctx, &pb.FarRequest{
 		Teid:          teid,
 		Action:        action,
 		FarId:         farId,
@@ -129,7 +147,10 @@ func (c *Client) AddDownlinkFar(teid uint32, action uint32, farId uint32, tunnel
 }
 
 func (c *Client) AddRoute(isUplink bool, srcMac []byte, dstMac []byte) {
-	r, err := c.Client.AddRoute(c.Ctx, &pb.RouteRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddRoute(ctx, &pb.RouteRequest{
 		IsUplink: isUplink,
 		SrcMac:   srcMac,
 		DstMac:   dstMac,
@@ -141,7 +162,10 @@ func (c *Client) AddRoute(isUplink bool, srcMac []byte, dstMac []byte) {
 }
 
 func (c *Client) AddQer(qerId uint32, qfi uint32, cir uint64, cbs uint64, pir uint64, pbs uint64) {
-	r, err := c.Client.AddQer(c.Ctx, &pb.QerRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddQer(ctx, &pb.QerRequest{
 		QerId: qerId,
 		Qfi:   qfi,
 		Cir:   cir,
@@ -156,7 +180,10 @@ func (c *Client) AddQer(qerId uint32, qfi uint32, cir uint64, cbs uint64, pir ui
 }
 
 func (c *Client) AddSDFTemplate(srcIp uint32, dstIp uint32, srcPort uint32, dstPort uint32, proto uint32, qerId uint32) {
-	r, err := c.Client.AddSDFTemplate(c.Ctx, &pb.SDFTemplateRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := c.Client.AddSDFTemplate(ctx, &pb.SDFTemplateRequest{
 		SrcIp:   srcIp,
 		DstIp:   dstIp,
 		SrcPort: srcPort,
