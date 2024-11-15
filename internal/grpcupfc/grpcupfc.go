@@ -65,16 +65,17 @@ func (c *Client) SayHello(name string) {
 	log.Printf("Received: %s", r.GetMessage())
 }
 
-func (c *Client) AddUplinkPdr(teid uint32, ueIp uint32, pdrId uint32, qerId uint32, farId uint32) {
+func (c *Client) AddPdr(teid, ueIp, pdrId, farId, qerId, precedence uint32) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	r, err := c.Client.AddUplinkPdr(ctx, &pb.UplinkPdrRequest{
-		Teid:  teid,
-		UeIp:  ueIp,
-		PdrId: pdrId,
-		QerId: qerId,
-		FarId: farId})
+		Teid:       teid,
+		UeIp:       ueIp,
+		PdrId:      pdrId,
+		FarId:      farId,
+		QerId:      qerId,
+		Precedence: precedence})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
@@ -95,7 +96,7 @@ func (c *Client) SetBuffer(action bool, farId uint32) {
 	log.Printf("Received: %s", r.GetMessage())
 }
 
-func (c *Client) AddUplinkFar(teid uint32, action uint32, farId uint32, tunnelSrcAddr uint32, tunnelDstAddr uint32) {
+func (c *Client) AddFar(teid uint32, action uint32, farId uint32, tunnelSrcAddr uint32, tunnelDstAddr uint32) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

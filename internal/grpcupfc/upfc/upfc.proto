@@ -60,6 +60,7 @@ message UplinkPdrRequest {
   uint32 pdr_id = 3;
   uint32 far_id = 4;
   uint32 qer_id = 5;
+  uint32 precedence = 6;
 }
 
 message DownlinkPdrRequest {

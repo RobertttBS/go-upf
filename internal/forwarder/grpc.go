@@ -76,6 +76,7 @@ func (g *Grpc) CreatePDR(lSeid uint64, req *ie.IE) error {
 	var pdrId uint32
 	var farId uint32
 	var qerId uint32
+	var precedence uint32
 
 	ies, err := req.CreatePDR()
 	if err != nil {
@@ -92,7 +93,12 @@ func (g *Grpc) CreatePDR(lSeid uint64, req *ie.IE) error {
 		case ie.PDI:
 			teid, ueIp, err = g.newPdi(i)
 			if err != nil {
-				break
+				g.log.Error("Failed to get PDI")
+			}
+		case ie.Precedence:
+			precedence, err = i.Precedence()
+			if err != nil {
+				g.log.Errorf("Failed to get precedence: %+v", err)
 			}
 		case ie.FARID:
 			v, err := i.FARID()
@@ -105,11 +111,11 @@ func (g *Grpc) CreatePDR(lSeid uint64, req *ie.IE) error {
 			if err != nil {
 				break
 			}
-			qerId = uint32(v)
+			qerId = v
 		}
 	}
 
-	g.grpcClient.AddUplinkPdr(teid, ueIp, pdrId, farId, qerId)
+	g.grpcClient.AddPdr(teid, ueIp, pdrId, farId, qerId, precedence)
 	return nil
 }
 
@@ -119,6 +125,7 @@ func (g *Grpc) UpdatePDR(lSeid uint64, req *ie.IE) error {
 	var pdrId uint32
 	var farId uint32
 	var qerId uint32
+	var precedence uint32
 
 	ies, err := req.UpdatePDR()
 	if err != nil {
@@ -135,7 +142,12 @@ func (g *Grpc) UpdatePDR(lSeid uint64, req *ie.IE) error {
 		case ie.PDI:
 			teid, ueIp, err = g.newPdi(i)
 			if err != nil {
-				break
+				g.log.Error("Failed to get PDI")
+			}
+		case ie.Precedence:
+			precedence, err = i.Precedence()
+			if err != nil {
+				g.log.Errorf("Failed to get precedence: %+v", err)
 			}
 		case ie.FARID:
 			v, err := i.FARID()
@@ -148,11 +160,11 @@ func (g *Grpc) UpdatePDR(lSeid uint64, req *ie.IE) error {
 			if err != nil {
 				break
 			}
-			qerId = uint32(v)
+			qerId = v
 		}
 	}
 
-	g.grpcClient.AddUplinkPdr(teid, ueIp, pdrId, farId, qerId)
+	g.grpcClient.AddPdr(teid, ueIp, pdrId, farId, qerId, precedence)
 	return nil
 }
 
@@ -179,13 +191,10 @@ func (g *Grpc) newForwardingParameter(ies []*ie.IE) (uint32, uint32, error) {
 			}
 			if x.HasIPv4() {
 				ip := v.IPv4Address
-				if len(ip) == 4 {
-					ipv4 = uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[3])
-				}
+				ipv4 = uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[3])
 			}
 		}
 	}
-
 	return teid, ipv4, nil
 }
 
@@ -230,7 +239,7 @@ func (g *Grpc) CreateFAR(lSeid uint64, req *ie.IE) error {
 			}
 		}
 	}
-	g.grpcClient.AddUplinkFar(teid, action, farId, tunnelSrcIp, tunnelDstIp)
+	g.grpcClient.AddFar(teid, action, farId, tunnelSrcIp, tunnelDstIp)
 	return nil
 }
 
@@ -264,10 +273,8 @@ func (g *Grpc) UpdateFAR(lSeid uint64, req *ie.IE) error {
 				return err
 			}
 			action = uint32(act.Flags)
-
-			// Todo: check if the action is changed from buffer to forward
-		case ie.ForwardingParameters:
-			xs, err := i.ForwardingParameters()
+		case ie.UpdateForwardingParameters:
+			xs, err := i.UpdateForwardingParameters()
 			if err != nil {
 				return err
 			}
@@ -277,7 +284,7 @@ func (g *Grpc) UpdateFAR(lSeid uint64, req *ie.IE) error {
 			}
 		}
 	}
-	g.grpcClient.AddUplinkFar(teid, action, farId, tunnelSrcIp, tunnelDstIp)
+	g.grpcClient.AddFar(teid, action, farId, tunnelSrcIp, tunnelDstIp)
 	return nil
 }
 
@@ -312,22 +319,18 @@ func (g *Grpc) CreateQER(lSeid uint64, req *ie.IE) error {
 			}
 			qfi = uint32(v)
 		case ie.GBR:
-			// 使用 GBR 作為 CIR
-			ul, err := i.GBRUL()
+			mbr, err := i.GBRUL()
 			if err != nil {
 				break
 			}
-			cir = ul
-			// 設定 CBS 為 CIR 的 1 秒量
+			cir = mbr
 			cbs = cir
 		case ie.MBR:
-			// 使用 MBR 作為 PIR
-			ul, err := i.MBRUL()
+			mbr, err := i.MBRUL()
 			if err != nil {
 				break
 			}
-			pir = ul
-			// 設定 PBS 為 PIR 的 1 秒量
+			pir = mbr
 			pbs = pir
 		}
 	}
@@ -363,22 +366,18 @@ func (g *Grpc) UpdateQER(lSeid uint64, req *ie.IE) error {
 			}
 			qfi = uint32(v)
 		case ie.GBR:
-			// 使用 GBR 作為 CIR
-			ul, err := i.GBRUL()
+			gbr, err := i.GBRUL()
 			if err != nil {
 				break
 			}
-			cir = ul
-			// 設定 CBS 為 CIR 的 1 秒量
+			cir = gbr
 			cbs = cir
 		case ie.MBR:
-			// 使用 MBR 作為 PIR
-			ul, err := i.MBRUL()
+			mbr, err := i.MBRUL()
 			if err != nil {
 				break
 			}
-			pir = ul
-			// 設定 PBS 為 PIR 的 1 秒量
+			pir = mbr
 			pbs = pir
 		}
 	}
