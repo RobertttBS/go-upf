@@ -48,7 +48,16 @@ func NewDriver(wg *sync.WaitGroup, cfg *factory.Config) (Driver, error) {
 
 	logger.MainLog.Infof("starting Gtpu Forwarder [%s]", cfgGtpu.Forwarder)
 	if cfgGtpu.Forwarder == "grpc" {
-		driver, err := OpenGrpc()
+		var gtpuAddr string
+		for _, ifInfo := range cfgGtpu.IfList {
+			gtpuAddr = fmt.Sprintf("%s:%d", ifInfo.Addr, factory.UpfGtpDefaultPort)
+			logger.MainLog.Infof("GTP Address: %q", gtpuAddr)
+			break
+		}
+		if gtpuAddr == "" {
+			return nil, errors.Errorf("not found GTP address")
+		}
+		driver, err := OpenGrpc(gtpuAddr)
 		if err != nil {
 			return nil, errors.Wrap(err, "open Grpc")
 		}

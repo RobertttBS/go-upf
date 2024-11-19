@@ -2,6 +2,8 @@ package forwarder
 
 import (
 	"encoding/binary"
+	"fmt"
+	"net"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,11 +18,35 @@ import (
 type Grpc struct {
 	grpcClient *grpcupfc.Client
 	log        *logrus.Entry
+	addr       uint32
 }
 
-func OpenGrpc() (*Grpc, error) {
+func ipv4ToUint32(ipStr string) (uint32, error) {
+	// split host and port
+	host, _, err := net.SplitHostPort(ipStr)
+	if err != nil {
+		host = ipStr
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return 0, fmt.Errorf("invalid IP address: %s", host)
+	}
+	ip = ip.To4()
+	if ip == nil {
+		return 0, fmt.Errorf("not an IPv4 address: %s", host)
+	}
+	return binary.BigEndian.Uint32(ip), nil
+}
+
+func OpenGrpc(addr string) (*Grpc, error) {
+	addrUint32, err := ipv4ToUint32(addr)
+	if err != nil {
+		return nil, errors.Wrap(err, "Fail to convert UPF IP address")
+	}
 	g := &Grpc{
-		log: logger.FwderLog.WithField(logger_util.FieldCategory, "Grpc"),
+		log:  logger.FwderLog.WithField(logger_util.FieldCategory, "Grpc"),
+		addr: addrUint32,
 	}
 
 	grpcClient, err := grpcupfc.NewClient("localhost:50051") // defaul grpc server address
@@ -205,7 +231,6 @@ func (g *Grpc) CreateFAR(lSeid uint64, req *ie.IE) error {
 	var teid uint32
 	var action uint32
 	var farId uint32
-	var tunnelSrcIp uint32 // shoulde be UPF ip
 	var tunnelDstIp uint32
 
 	ies, err := req.CreateFAR()
@@ -242,7 +267,7 @@ func (g *Grpc) CreateFAR(lSeid uint64, req *ie.IE) error {
 			}
 		}
 	}
-	g.grpcClient.AddFar(teid, action, farId, tunnelSrcIp, tunnelDstIp)
+	g.grpcClient.AddFar(teid, action, farId, g.addr, tunnelDstIp)
 	return nil
 }
 
@@ -250,7 +275,6 @@ func (g *Grpc) UpdateFAR(lSeid uint64, req *ie.IE) error {
 	var teid uint32
 	var action uint32
 	var farId uint32
-	var tunnelSrcIp uint32 // shoulde be UPF ip
 	var tunnelDstIp uint32
 
 	ies, err := req.UpdateFAR()
@@ -287,7 +311,7 @@ func (g *Grpc) UpdateFAR(lSeid uint64, req *ie.IE) error {
 			}
 		}
 	}
-	g.grpcClient.AddFar(teid, action, farId, tunnelSrcIp, tunnelDstIp)
+	g.grpcClient.AddFar(teid, action, farId, g.addr, tunnelDstIp)
 	return nil
 }
 
