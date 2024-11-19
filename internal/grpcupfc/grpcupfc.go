@@ -162,17 +162,17 @@ func (c *Client) AddRoute(isUplink bool, srcMac []byte, dstMac []byte) {
 	log.Printf("Received: %s", r.GetMessage())
 }
 
-func (c *Client) AddQer(qerId uint32, qfi uint32, cir uint64, cbs uint64, pir uint64, pbs uint64) {
+func (c *Client) AddQer(qerId uint32, qfi uint32, ulgbr, ulmbr, dlgbr, dlmbr uint64) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	r, err := c.Client.AddQer(ctx, &pb.QerRequest{
 		QerId: qerId,
 		Qfi:   qfi,
-		Cir:   cir,
-		Cbs:   cbs,
-		Pir:   pir,
-		Pbs:   pbs,
+		Ulgbr: ulgbr,
+		Ulmbr: ulmbr,
+		Dlgbr: dlgbr,
+		Dlmbr: dlmbr,
 	})
 	if err != nil {
 		log.Fatalf("could not add QER: %v", err)

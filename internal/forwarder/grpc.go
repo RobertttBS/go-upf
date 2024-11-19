@@ -107,6 +107,9 @@ func (g *Grpc) CreatePDR(lSeid uint64, req *ie.IE) error {
 			}
 			farId = uint32(v)
 		case ie.QERID:
+			if qerId != 0 {
+				continue
+			}
 			v, err := i.QERID()
 			if err != nil {
 				break
@@ -202,7 +205,7 @@ func (g *Grpc) CreateFAR(lSeid uint64, req *ie.IE) error {
 	var teid uint32
 	var action uint32
 	var farId uint32
-	var tunnelSrcIp uint32
+	var tunnelSrcIp uint32 // shoulde be UPF ip
 	var tunnelDstIp uint32
 
 	ies, err := req.CreateFAR()
@@ -247,7 +250,7 @@ func (g *Grpc) UpdateFAR(lSeid uint64, req *ie.IE) error {
 	var teid uint32
 	var action uint32
 	var farId uint32
-	var tunnelSrcIp uint32
+	var tunnelSrcIp uint32 // shoulde be UPF ip
 	var tunnelDstIp uint32
 
 	ies, err := req.UpdateFAR()
@@ -295,10 +298,10 @@ func (g *Grpc) RemoveFAR(lSeid uint64, req *ie.IE) error {
 func (g *Grpc) CreateQER(lSeid uint64, req *ie.IE) error {
 	var qerId uint32
 	var qfi uint32
-	var cir uint64
-	var cbs uint64
-	var pir uint64
-	var pbs uint64
+	var ulgbr uint64
+	var ulmbr uint64
+	var dlgbr uint64
+	var dlmbr uint64
 
 	ies, err := req.CreateQER()
 	if err != nil {
@@ -319,23 +322,27 @@ func (g *Grpc) CreateQER(lSeid uint64, req *ie.IE) error {
 			}
 			qfi = uint32(v)
 		case ie.GBR:
-			mbr, err := i.GBRUL()
+			ulgbr, err = i.GBRUL()
 			if err != nil {
 				break
 			}
-			cir = mbr
-			cbs = cir
+			dlgbr, err = i.GBRDL()
+			if err != nil {
+				break
+			}
 		case ie.MBR:
-			mbr, err := i.MBRUL()
+			ulmbr, err = i.MBRUL()
 			if err != nil {
 				break
 			}
-			pir = mbr
-			pbs = pir
+			dlmbr, err = i.MBRDL()
+			if err != nil {
+				break
+			}
 		}
 	}
 
-	g.grpcClient.AddQer(qerId, qfi, cir, cbs, pir, pbs)
+	g.grpcClient.AddQer(qerId, qfi, ulgbr, ulmbr, dlgbr, dlmbr)
 	return nil
 }
 

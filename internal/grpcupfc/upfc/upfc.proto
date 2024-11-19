@@ -88,10 +88,10 @@ message RouteRequest {
 message QerRequest {
   uint32 qer_id = 1;
   uint32 qfi = 2;
-  uint64 cir = 3;
-  uint64 cbs = 4;
-  uint64 pir = 5;
-  uint64 pbs = 6;
+  uint64 ulgbr = 3;
+  uint64 ulmbr = 4;
+  uint64 dlgbr = 5;
+  uint64 dlmbr = 6;
 }
 
 message SDFTemplateRequest {
