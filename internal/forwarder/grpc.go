@@ -144,7 +144,7 @@ func (g *Grpc) CreatePDR(lSeid uint64, req *ie.IE) error {
 		}
 	}
 
-	g.grpcClient.AddPdr(teid, ueIp, pdrId, farId, qerId, precedence)
+	g.grpcClient.AddPdr(teid, ueIp, pdrId, farId, qerId, precedence, lSeid)
 	return nil
 }
 
@@ -193,7 +193,7 @@ func (g *Grpc) UpdatePDR(lSeid uint64, req *ie.IE) error {
 		}
 	}
 
-	g.grpcClient.AddPdr(teid, ueIp, pdrId, farId, qerId, precedence)
+	g.grpcClient.AddPdr(teid, ueIp, pdrId, farId, qerId, precedence, lSeid)
 	return nil
 }
 

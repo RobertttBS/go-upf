@@ -65,12 +65,13 @@ func (c *Client) SayHello(name string) {
 	log.Printf("Received: %s", r.GetMessage())
 }
 
-func (c *Client) AddPdr(teid, ueIp, pdrId, farId, qerId, precedence uint32) {
+func (c *Client) AddPdr(teid, ueIp, pdrId, farId, qerId, precedence uint32, seid uint64) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	r, err := c.Client.AddUplinkPdr(ctx, &pb.UplinkPdrRequest{
+	r, err := c.Client.AddPdr(ctx, &pb.PdrRequest{
 		Teid:       teid,
+		Seid:       seid,
 		UeIp:       ueIp,
 		PdrId:      pdrId,
 		FarId:      farId,
@@ -109,23 +110,6 @@ func (c *Client) AddFar(teid uint32, action uint32, farId uint32, tunnelSrcAddr 
 	})
 	if err != nil {
 		log.Fatalf("could not add uplink FAR: %v", err)
-	}
-	log.Printf("Received: %s", r.GetMessage())
-}
-
-func (c *Client) AddDownlinkPdr(seid uint64, ueIp uint32, pdrId uint32, farId uint32, qerId uint32) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	r, err := c.Client.AddDownlinkPdr(ctx, &pb.DownlinkPdrRequest{
-		Seid:  seid,
-		UeIp:  ueIp,
-		PdrId: pdrId,
-		FarId: farId,
-		QerId: qerId,
-	})
-	if err != nil {
-		log.Fatalf("could not add downlink PDR: %v", err)
 	}
 	log.Printf("Received: %s", r.GetMessage())
 }

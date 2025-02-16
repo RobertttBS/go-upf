@@ -13,11 +13,11 @@
 // limitations under the License.
 syntax = "proto3";
 
-option go_package = "/upfc";
 option java_multiple_files = true;
 option java_package = "org.onosproject.bessupf.grpcClient";
 option java_outer_classname = "UPFAppProto";
 option objc_class_prefix = "HLW";
+option go_package = "upf-grpc/upfc";
 
 package upfc;
 
@@ -26,9 +26,8 @@ service UPFApp {
   // Sends a greeting
   rpc SayHello (HelloRequest) returns (HelloReply) {}
   rpc SetBuffer (BufferRequest) returns (RpcReply) {}
-  rpc AddUplinkPdr (UplinkPdrRequest) returns (RpcReply) {}
+  rpc AddPdr (PdrRequest) returns (RpcReply) {}
   rpc AddUplinkFar (FarRequest) returns (RpcReply) {}
-  rpc AddDownlinkPdr (DownlinkPdrRequest) returns (RpcReply) {}
   rpc AddDownlinkFar (FarRequest) returns (RpcReply) {}
   rpc AddRoute (RouteRequest) returns (RpcReply) {}
   rpc AddQer (QerRequest) returns (RpcReply) {}
@@ -54,21 +53,14 @@ message BufferRequest {
   uint32 far_id = 2;
 }
 
-message UplinkPdrRequest {
+message PdrRequest {
   uint32 teid = 1;
   uint32 ue_ip = 2;
   uint32 pdr_id = 3;
   uint32 far_id = 4;
   uint32 qer_id = 5;
   uint32 precedence = 6;
-}
-
-message DownlinkPdrRequest {
-  uint64 seid = 1;
-  uint32 ue_ip = 2;
-  uint32 pdr_id = 3;
-  uint32 far_id = 4;
-  uint32 qer_id = 5;
+  uint64 seid = 7;
 }
 
 message FarRequest {
